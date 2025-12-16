@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Horizon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@400;700&display=swap');
+      
+      body {
+        margin: 0;
+        background-color: #0b0014;
+        color: #fff;
+        font-family: 'Rajdhani', sans-serif;
+        overflow: hidden;
+      }
+      
+      .retro-text {
+        font-family: 'Press Start 2P', cursive;
+        text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff;
+      }
+
+      /* Custom Scrollbar for chat/logs if needed */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1a0024; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #ff00ff; 
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+    "three": "https://esm.sh/three@^0.182.0",
+    "@react-three/fiber": "https://esm.sh/@react-three/fiber@^9.4.2",
+    "@react-three/drei": "https://esm.sh/@react-three/drei@^10.7.7"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
