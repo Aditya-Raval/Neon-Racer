@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { PerspectiveCamera, Stars, Environment, Text, Float } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { PerspectiveCamera, Stars, Float, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { GameState, ObstacleData, LANE_WIDTH, WORLD_SPEED_BASE } from '../types';
 
@@ -190,68 +190,11 @@ const PlayerCar = ({ lane, isCrashed }: { lane: number; isCrashed: boolean }) =>
   );
 };
 
-    // Input Handling - Keyboard
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (gameState !== GameState.PLAYING || stateRef.current.isCrashed) return;
-            
-            if (e.key === 'ArrowLeft' || e.key === 'a') {
-                setLane(prev => Math.max(prev - 1, -1));
-            } else if (e.key === 'ArrowRight' || e.key === 'd') {
-                setLane(prev => Math.min(prev + 1, 1));
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [gameState]);
-
-    // Input Handling - Touch/Swipe
-    useEffect(() => {
-        let touchStartX = 0;
-        let touchStartY = 0;
-        const minSwipeDistance = 50; // Minimum distance for a swipe to register
-        
-        const handleTouchStart = (e: TouchEvent) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        };
-        
-        const handleTouchEnd = (e: TouchEvent) => {
-            if (gameState !== GameState.PLAYING || stateRef.current.isCrashed) return;
-            
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            
-            // Only register horizontal swipes (ignore mostly vertical swipes)
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-                if (deltaX > 0) {
-                    // Swipe right
-                    setLane(prev => Math.min(prev + 1, 1));
-                } else {
-                    // Swipe left
-                    setLane(prev => Math.max(prev - 1, -1));
-                }
-            }
-        };
-        
-        window.addEventListener('touchstart', handleTouchStart);
-        window.addEventListener('touchend', handleTouchEnd);
-        
-        return () => {
-            window.removeEventListener('touchstart', handleTouchStart);
-            window.removeEventListener('touchend', handleTouchEnd);
-        };
-    }, [gameState]);
-
-
 const Obstacle: React.FC<{ data: ObstacleData }> = ({ data }) => {
     // Visuals for obstacles
     const meshRef = useRef<THREE.Mesh>(null);
     
-    useFrame((state) => {
+    useFrame(() => {
         if(meshRef.current) {
             meshRef.current.rotation.y += 0.02;
             meshRef.current.rotation.z += 0.01;
@@ -317,7 +260,7 @@ const GameScene: React.FC<GameSceneProps> = ({ gameState, setGameState, setScore
         }
     }, [gameState]);
 
-    // Input Handling
+    // Input Handling - Keyboard
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (gameState !== GameState.PLAYING || stateRef.current.isCrashed) return;
@@ -330,6 +273,47 @@ const GameScene: React.FC<GameSceneProps> = ({ gameState, setGameState, setScore
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [gameState]);
+
+    // Input Handling - Touch/Swipe for Mobile
+    useEffect(() => {
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const minSwipeDistance = 50; // Minimum distance for a swipe to register
+        
+        const handleTouchStart = (e: TouchEvent) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        };
+        
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (gameState !== GameState.PLAYING || stateRef.current.isCrashed) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // Only register horizontal swipes (ignore mostly vertical swipes)
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) {
+                    // Swipe right
+                    setLane(prev => Math.min(prev + 1, 1));
+                } else {
+                    // Swipe left
+                    setLane(prev => Math.max(prev - 1, -1));
+                }
+            }
+        };
+        
+        window.addEventListener('touchstart', handleTouchStart);
+        window.addEventListener('touchend', handleTouchEnd);
+        
+        return () => {
+            window.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchend', handleTouchEnd);
+        };
     }, [gameState]);
 
     useFrame((state, delta) => {
@@ -348,7 +332,6 @@ const GameScene: React.FC<GameSceneProps> = ({ gameState, setGameState, setScore
             // Player Bounds (approximate)
             const playerX = lane * LANE_WIDTH;
             const playerZ = 0;
-            const playerWidth = 1.6;
             
             prev.forEach(obs => {
                 // Move obstacle towards camera (+Z)
@@ -374,20 +357,10 @@ const GameScene: React.FC<GameSceneProps> = ({ gameState, setGameState, setScore
         });
 
         // Spawn logic
-        // We want obstacles to appear at z = -100
-        // We spawn based on distance traveled essentially, but here simple timer/distance check works
-        // Actually, let's just keep 'lastSpawnZ' relative to the world "movement"
-        // Since the world moves past us, we simulate spawning by adding objects at -100 when the last one has moved close enough?
-        // Easier: Just randomly spawn based on a probability adjusted by delta time.
-        
-        // Better: time based spawning
         const spawnChance = delta * (currentSpeed / 20); // Faster speed = more frequent spawns
         if (Math.random() < spawnChance) {
              const newLane = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
              const spawnZ = -120;
-             
-             // Check if we already have an obstacle too close in this lane at the back
-             // This is a simple heuristic to prevent unfair overlaps
              
              setObstacles(prev => {
                  const tooClose = prev.some(o => o.z < -100 && Math.abs(o.x - (newLane * LANE_WIDTH)) < 0.1);
