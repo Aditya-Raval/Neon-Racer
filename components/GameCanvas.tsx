@@ -190,6 +190,63 @@ const PlayerCar = ({ lane, isCrashed }: { lane: number; isCrashed: boolean }) =>
   );
 };
 
+    // Input Handling - Keyboard
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (gameState !== GameState.PLAYING || stateRef.current.isCrashed) return;
+            
+            if (e.key === 'ArrowLeft' || e.key === 'a') {
+                setLane(prev => Math.max(prev - 1, -1));
+            } else if (e.key === 'ArrowRight' || e.key === 'd') {
+                setLane(prev => Math.min(prev + 1, 1));
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [gameState]);
+
+    // Input Handling - Touch/Swipe
+    useEffect(() => {
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const minSwipeDistance = 50; // Minimum distance for a swipe to register
+        
+        const handleTouchStart = (e: TouchEvent) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        };
+        
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (gameState !== GameState.PLAYING || stateRef.current.isCrashed) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // Only register horizontal swipes (ignore mostly vertical swipes)
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) {
+                    // Swipe right
+                    setLane(prev => Math.min(prev + 1, 1));
+                } else {
+                    // Swipe left
+                    setLane(prev => Math.max(prev - 1, -1));
+                }
+            }
+        };
+        
+        window.addEventListener('touchstart', handleTouchStart);
+        window.addEventListener('touchend', handleTouchEnd);
+        
+        return () => {
+            window.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [gameState]);
+
+
 const Obstacle: React.FC<{ data: ObstacleData }> = ({ data }) => {
     // Visuals for obstacles
     const meshRef = useRef<THREE.Mesh>(null);
